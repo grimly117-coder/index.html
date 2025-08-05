@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Chef Steak Catcher</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fcd5b5;
+      overflow: hidden;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      background: url('https://i.imgur.com/8Q2kWfM.png') no-repeat center center;
+      background-size: cover;
+    }
+    #restartBtn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background-color: #ff6b6b;
+      color: white;
+      border: none;
+      font-size: 18px;
+      border-radius: 8px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <button id="restartBtn">Рестарт</button>
+  <canvas id="gameCanvas"></canvas>
+  <audio id="catchSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3" preload="auto"></audio>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const catchSound = document.getElementById('catchSound');
+
+    const chefImg = new Image();
+    chefImg.src = 'https://i.imgur.com/W0SSts2.png';
+
+    const steakImg = new Image();
+    steakImg.src = 'https://i.imgur.com/lmr0oZV.png';
+
+    // Размер canvas
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let chef = {
+      x: canvas.width / 2 - 40,
+      y: canvas.height - 100,
+      width: 80,
+      height: 80
+    };
+
+    let steaks = [];
+    let score = 0;
+    let soundAllowed = false;
+
+    function drawChef() {
+      ctx.drawImage(chefImg, chef.x, chef.y, chef.width, chef.height);
+    }
+
+    function drawSteaks() {
+      steaks.forEach(s => ctx.drawImage(steakImg, s.x, s.y, s.size, s.size));
+    }
+
+    function moveSteaks() {
+      steaks.forEach((s, i) => {
+        s.y += s.speed;
+        if (
+          s.y + s.size >= chef.y &&
+          s.x + s.size / 2 >= chef.x &&
+          s.x + s.size / 2 <= chef.x + chef.width
+        ) {
+          steaks.splice(i, 1);
+          score++;
+          if (soundAllowed) catchSound.play();
+        } else if (s.y > canvas.height) {
+          steaks.splice(i, 1);
+        }
+      });
+    }
+
+    function spawnSteak() {
+      const size = 50;
+      const x = Math.random() * (canvas.width - size);
+      const speed = 3 + Math.random() * 2;
+      steaks.push({ x, y: 0, size, speed });
+    }
+
+    function drawScore() {
+      ctx.fillStyle = '#fff';
+      ctx.font = '24px sans-serif';
+      ctx.fillText('Очки: ' + score, 10, 30);
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawChef();
+      drawSteaks();
+      moveSteaks();
+      drawScore();
+      requestAnimationFrame(gameLoop);
+    }
+
+    setInterval(spawnSteak, 1000);
+
+    // Поддержка касания
+    canvas.addEventListener('touchstart', (e) => {
+      soundAllowed = true;
+      const touch = e.touches[0];
+      moveChef(touch.clientX);
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      moveChef(touch.clientX);
+    }, { passive: false });
+
+    function moveChef(x) {
+      chef.x = x - chef.width / 2;
+      if (chef.x < 0) chef.x = 0;
+      if (chef.x + chef.width > canvas.width) chef.x = canvas.width - chef.width;
+    }
+
+    // Кнопка рестарта
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      score = 0;
+      steaks = [];
+    });
+
+    gameLoop();
+  </script>
+</body>
+</html>
